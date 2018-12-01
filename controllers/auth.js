@@ -169,11 +169,62 @@ exports.postResetPassword = (req, res, next) => {
               subject: 'Password Reset',
               html: `
               <p>You request a password reset</p>
-              <p>Click this <a href="http://localhost:3000/reset/${token}>link</a> to set a new password.</p>`
+              <p>Click this <a href="http://localhost:3000/reset/${token}">link</a> to set a new password.</p>`
             });;
           })
         }
       })
       .catch(err => console.log(err));
   });
+};
+
+exports.getNewPassword = (req, res, next) => {
+  const token = req.params.token;
+  let message = req.flash('error');
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
+  }
+
+  User.findOne({
+    resetToken: token,
+    resetTokenExpiration: {
+      $gt: Date.now()
+    }
+  }).then(user => {
+    res.render('auth/newPassword', {
+      path: '/newPassword',
+      pageTitle: 'New Password',
+      errorMessage: message,
+      userId: user._id.toString(),
+      passwordToken: token
+    });
+  }).catch(err => console.log(err));
+}
+
+exports.postNewPassword = (req, res, next) => {
+  const newPassword = req.body.password;
+  const userId = req.body.userId;
+  const passwordToken = req.body.passwordToken;
+  let foundUser;
+
+
+  User.findOne({
+    resetToken: passwordToken,
+    resetTokenExpiration: {
+      $gt: Date.now()
+    },
+    _id: userId
+  }).then(user => {
+    foundUser = user;
+    return bcrypt.hash(newPassword, 12);
+  }).then(hashedPassword => {
+    foundUser.password = hashedPassword;
+    foundUser.resetToken = undefined;
+    foundUser.resetTokenExpiration = undefined;
+    return foundUser.save()
+  }).then(result => {
+    res.redirect('/login')
+  }).catch(err => console.log(err));
 };

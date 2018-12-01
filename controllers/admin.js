@@ -34,7 +34,9 @@ exports.postAddProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.find()
+  Product.find({
+      userId: req.user._Id
+    })
     .then(products => {
       res.render('admin/products', {
         pageTitle: 'Product List',
