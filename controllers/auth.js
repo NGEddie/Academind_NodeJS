@@ -50,8 +50,8 @@ exports.postLogin = (req, res, next) => {
   const password = req.body.password;
 
   User.findOne({
-    email: email
-  })
+      email: email
+    })
     .then(user => {
       if (!user) {
         req.flash('error', 'Invalid email or Password');
@@ -86,8 +86,8 @@ exports.postSignup = (req, res, next) => {
   const confirmPassword = req.body.password;
 
   User.findOne({
-    email: email
-  })
+      email: email
+    })
     .then(userInfo => {
       if (userInfo) {
         req.flash('emailExists', `${email} already exists`);
@@ -152,28 +152,27 @@ exports.postResetPassword = (req, res, next) => {
     const token = buffer.toString('hex');
 
     User.findOne({
-      email: req.body.email
-    })
+        email: req.body.email
+      })
       .then(user => {
         if (!user) {
           req.flash('error', 'Email address not valid');
-          return res.redirect('/reset');
+          return res.redirect('/resetPassword');
         } else {
           user.resetToken = token;
           user.resetTokenExpiration = Date.now() + 3600000;
-          return user.save();
+          return user.save().then(result => {
+            res.redirect('/');
+            transporter.sendMail({
+              to: req.body.email,
+              from: 'shop@node-complete.com',
+              subject: 'Password Reset',
+              html: `
+              <p>You request a password reset</p>
+              <p>Click this <a href="http://localhost:3000/reset/${token}>link</a> to set a new password.</p>`
+            });;
+          })
         }
-      })
-      .then(result => {
-        res.redirect('/');
-        transporter.sendMail({
-          to: req.body.email,
-          from: 'shop@node-complete.com',
-          subject: 'Password Reset',
-          html: `
-          <p>You request a password reset</p>
-          <p>Click this <a href="http://localhost:3000/reset/${token}>link</a> to set a new password.</p>`
-        });
       })
       .catch(err => console.log(err));
   });
