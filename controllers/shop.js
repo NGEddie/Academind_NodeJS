@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PDFDocument = require('pdfkit');
-const stripe = require('stripe')('sk_test_pBREDZyjyZtyIPxAQI60IO9s');
+const stripe = require('stripe')(STRIPE_TEST_KEY);
 
 const Product = require('../models/product');
 const Order = require('../models/order');
