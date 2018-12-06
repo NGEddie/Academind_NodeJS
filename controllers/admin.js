@@ -1,4 +1,7 @@
+const fileHelper = require('../util/file');
+
 const Product = require('../models/product');
+
 const { validationResult } = require('express-validator/check');
 
 exports.getAddProduct = (req, res, next) => {
@@ -24,7 +27,6 @@ exports.postAddProduct = (req, res, next) => {
 	const description = req.body.description;
 	const price = req.body.price;
 	const errors = validationResult(req);
-	console.log(image);
 
 	if (!image) {
 		return res.status(422).render('admin/edit-product', {
@@ -155,6 +157,7 @@ exports.postEditProduct = (req, res, next) => {
 				product.description = updatedDescription;
 
 				if (image) {
+					fileHelper.deleteFile(product.imageUrl);
 					product.imageUrl = image.path;
 				}
 
@@ -170,13 +173,36 @@ exports.postEditProduct = (req, res, next) => {
 		});
 };
 
-exports.postDeleteProduct = (req, res, next) => {
-	const prodId = req.body.productId;
-	Product.deleteOne({ _id: prodId, userId: req.user._id })
-		.then(() => res.redirect('/admin/products'))
+// exports.postDeleteProduct = (req, res, next) => {
+// 	const prodId = req.body.productId;
+// 	Product.findById(prodId)
+// 		.then((product) => {
+// 			if (!product) {
+// 				return next(new Error('Product Not Found'));
+// 			}
+// 			fileHelper.deleteFile(product.imageUrl);
+// 			return Product.deleteOne({ _id: prodId, userId: req.user._id });
+// 		})
+// 		.then(() => res.redirect('/admin/products'))
+// 		.catch((err) => {
+// 			const error = new Error(`Unable to delete Product: ${err}`);
+// 			error.httpStatusCode = 500;
+// 			return next(error);
+// 		});
+// };
+
+exports.deleteProduct = (req, res, next) => {
+	const prodId = req.params.productId;
+	Product.findById(prodId)
+		.then((product) => {
+			if (!product) {
+				return next(new Error('Product Not Found'));
+			}
+			fileHelper.deleteFile(product.imageUrl);
+			return Product.deleteOne({ _id: prodId, userId: req.user._id });
+		})
+		.then(() => res.status(200).json({ message: 'Success' }))
 		.catch((err) => {
-			const error = new Error(`Unable to delete Product: ${err}`);
-			error.httpStatusCode = 500;
-			return next(error);
+			res.status(500).json({ message: 'Product Delete Failed' });
 		});
 };
